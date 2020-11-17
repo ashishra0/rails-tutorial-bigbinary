@@ -1,13 +1,15 @@
 import React, { Component } from 'react';
 import API from '../../utils/API';
 import * as Routes from '../../utils/Routes';
-
+import Errors from '../shared/Errors';
 
 class New extends Component {
   constructor(props) {
     super(props);
     this.state = {
       description: '',
+      message: null,
+      errors: []
     };
 
     this.onSubmit = this.onSubmit.bind(this);
@@ -24,19 +26,16 @@ class New extends Component {
         }, 1000)
       })
       .catch(error => {
-        if (error.text) {
-          error.text().then(err => {
-            console.error(err)
-          });
-        }
+        error.json().then(({ errors }) => {
+          this.setState({ ...this.state, errors })
+        });
       });
   }
 
 
   handleChange(event) {
     this.setState({
-      description: event.target.value,
-      message: null
+      description: event.target.value
     });
   }
 
@@ -70,10 +69,25 @@ class New extends Component {
     )
   }
 
+  displayErrors() {
+    const { errors } = this.state;
+
+    return (
+      <div className="row justify-content-center">
+        {errors.length !== 0 ? (
+          <div className="mt-4">
+            <Errors errors={errors} message="danger" />
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
   render() {
     return (
       <div className="container">
         <div className="col-md-10 mx-auto pt-2">
+          {this.displayErrors()}
           {this.state.message
             ? <div className="alert alert-success">{this.state.message}</div>
             : <div className="col-md-10 mx-auto pt-2">{this.displayAddTaskForm()}</div>
