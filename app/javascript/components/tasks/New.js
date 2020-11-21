@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import API from '../../utils/API';
 import * as Routes from '../../utils/Routes';
 import Errors from '../shared/Errors';
+import { fetchApi } from '../../utils/API';
 
 class New extends Component {
   constructor(props) {
@@ -16,26 +17,47 @@ class New extends Component {
     this.handleChange = this.handleChange.bind(this);
   }
 
-  onSubmit(event) {
-    event.preventDefault();
-    API.postNewTask({ task: { description: this.state.description } })
-      .then((response) => {
-        this.setState({ message: response.notice })
-        setTimeout(function () {
-          window.location.href = Routes.task_path(response.id);
-        }, 1000)
-      })
-      .catch(error => {
-        error.json().then(({ errors }) => {
-          this.setState({ ...this.state, errors })
-        });
-      });
+  handleError(response) {
+    this.setState({ errors: response.messages });
   }
 
+  displayErrors() {
+    const { errors } = this.state;
+
+    return (
+      <div className="row justify-content-center">
+        {errors.length !== 0 ? (
+          <div className="mt-4">
+            <Errors errors={errors} message="danger" />
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  onSubmit(event) {
+    event.preventDefault();
+    fetchApi({
+      url: Routes.tasks_path(),
+      method: 'POST',
+      body: {
+        task: { description: this.state.description },
+      },
+      onError: this.handleError,
+      onSuccess: response => {
+        this.setState({ message: response.messages[0] });
+      },
+      successCallBack: response => {
+        setTimeout(function () {
+          window.location.replace(Routes.task_path(response.id));
+        }, 1000);
+      },
+    });
+  }
 
   handleChange(event) {
     this.setState({
-      description: event.target.value
+      description: event.target.value,
     });
   }
 
@@ -69,30 +91,14 @@ class New extends Component {
     )
   }
 
-  displayErrors() {
-    const { errors } = this.state;
-
-    return (
-      <div className="row justify-content-center">
-        {errors.length !== 0 ? (
-          <div className="mt-4">
-            <Errors errors={errors} message="danger" />
-          </div>
-        ) : null}
-      </div>
-    )
-  }
-
   render() {
     return (
       <div className="container">
-        <div className="col-md-10 mx-auto pt-2">
-          {this.displayErrors()}
-          {this.state.message
-            ? <div className="alert alert-success">{this.state.message}</div>
-            : <div className="col-md-10 mx-auto pt-2">{this.displayAddTaskForm()}</div>
-          }
-        </div>
+        {this.displayErrors()}
+        {this.state.message
+          ? <div className="alert alert-success">{this.state.message}</div>
+          : <div className="col-md-10 mx-auto pt-2">{this.displayAddTaskForm()}</div>
+        }
       </div>
     );
   }
